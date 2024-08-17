@@ -1,0 +1,127 @@
+Latest Pipeline Script until : 160824@10:00
+
+pipeline {
+    agent any
+    stages {
+		stage('Clean Workspace'){
+             steps{
+                 cleanWs()
+             }
+         }
+        stage('SCM') {
+            steps {
+                git url: 'https://github.com/smahesh97/intdemo.git', branch: 'master'
+                sh '''
+                #!/bin/bash
+                ls *
+                '''
+                
+            } 
+            
+        }
+        stage('Sonarqube Analysis') {
+        environment {
+            scannerHome = tool 'sonarqube-scanner'
+          }
+            steps {
+            withSonarQubeEnv('sonarqube-server') {
+            sh "${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=develop -Dsonar.sources=."
+            }
+        }  
+      }
+        stage("Quality Gate"){
+            steps {
+                 script {
+                     waitForQualityGate abortPipeline: false, credentialsId: 'sonarqube-token' 
+                 }
+             }
+        }
+        stage('Build') {
+            steps {
+                sh "docker build -t intdemo108 ."
+                sh "docker tag intdemo108:latest 320542636300.dkr.ecr.us-east-1.amazonaws.com/intdemo108:latest"
+				sh '''
+                #!/bin/bash
+                docker images
+                '''
+                }
+            }
+		 
+        stage('aquacan using trivy') {
+            steps {
+                    sh "docker run -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --exit-code 0 --severity MEDIUM,HIGH public.ecr.aws/lambda/nodejs"
+            }
+        }
+        stage('Push image to ECR') {
+        steps {
+                script{
+                        docker.withRegistry('https://320542636300.dkr.ecr.us-east-1.amazonaws.com', 'ecr:us-east-1:awscredentials') {
+                        sh "docker push 320542636300.dkr.ecr.us-east-1.amazonaws.com/intdemo108:latest"
+                    }
+                }
+            }
+       }
+   }
+}
+
+
+
+
+======================================================================
+Latest PipeLine Scripts until : 150824@7:33
+
+pipeline {
+    agent any
+    stages {
+		stage('Clean Workspace'){
+             steps{
+                 cleanWs()
+             }
+         }
+        stage('SCM') {
+            steps {
+                git url: 'https://github.com/smahesh97/intdemo.git', branch: 'master', credentialsId: 'GitCredentials'
+                }          
+        }
+        stage('Sonarqube Analysis') {
+        environment {
+            scannerHome = tool 'sonarqube-scanner'
+          }
+            steps {
+            withSonarQubeEnv('SonarQubeServer') {
+            sh "${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=develop -Dsonar.sources=."
+            }
+        }  
+      }
+        stage("Quality Gate"){
+            steps {
+                 script {
+                     waitForQualityGate abortPipeline: false, credentialsId: 'SonarQubeToken' 
+                 }
+             }
+        }
+        stage('Build') {
+            steps {
+                sh "docker build -t intdemo ."
+                sh "docker tag intdemo:latest 320542636300.dkr.ecr.us-east-1.amazonaws.com/intdemo108/node:latest"
+				
+                }
+            }
+		 
+        stage('aquacan using trivy') {
+            steps {
+                    sh "docker run -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --exit-code 0 --severity MEDIUM,HIGH public.ecr.aws/v1f8g7a4/nodejs"
+            }
+        }
+        stage('Push image to ECR') {
+        steps {
+                script{
+                        docker.withRegistry('320542636300.dkr.ecr.us-east-1.amazonaws.com/intdemo108', 'ecr:us-east-1:awscredentials') {
+                       sh "docker push 320542636300.dkr.ecr.us-east-1.amazonaws.com/node:latest"
+                    }
+                }
+            }
+       }
+   }
+}
+============================================================================================
