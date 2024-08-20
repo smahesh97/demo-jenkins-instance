@@ -1,5 +1,6 @@
 #!/bin/bash
 sudo apt update
+sudo apt install curl -y && sudo apt install wget -y && sudo apt install unzip -y
 sudo apt install fontconfig openjdk-17-jre -y
 java -version
 sudo apt update -y
@@ -29,7 +30,12 @@ echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.
 sudo apt-get update
 sudo apt-get install trivy -y
 
-#install terraform
+# Install AWS CLI
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+
+#Install terraform
 #verify HashiCorp's GPG signature and install HashiCorp's Debian package repository.
 sudo apt-get update && sudo apt-get install -y gnupg software-properties-common
 #Install the HashiCorp GPG key.
